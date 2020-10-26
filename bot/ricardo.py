@@ -53,10 +53,20 @@ async def addrole(ctx, *args):
     role_name = ' '.join(args)
     role = discord.utils.get(ctx.guild.roles, name=role_name)
 
+    everyone = discord.utils.get(ctx.guild.roles, name="@everyone")
+    ricardo_role = discord.utils.get(ctx.guild.roles, name="Ricardo.exe")
+    admin_role = discord.utils.get(ctx.guild.roles, name="Admin")
+    testing_role = discord.utils.get(ctx.guild.roles, name="testing")
+    student_role = discord.utils.get(ctx.guild.roles, name="Students")
+    managed_roles = [r for r in ctx.guild.roles if r.managed]
+
+    unrequestable_roles = [everyone, ricardo_role, admin_role, testing_role, student_role]
+    unrequestable_roles.extend(managed_roles)
+
     if not role:
         await ctx.message.channel.send("Invalid role. !roles to see available roles")
     else:
-        if not role.managed and not role.name == "Admin":
+        if role not in unrequestable_roles:
             try:
                 await member.add_roles(role)
                 await ctx.message.channel.send("Role added!")
@@ -92,9 +102,10 @@ async def roles(ctx):
     ricardo_role = discord.utils.get(ctx.guild.roles, name="Ricardo.exe")
     admin_role = discord.utils.get(ctx.guild.roles, name="Admin")
     testing_role = discord.utils.get(ctx.guild.roles, name="testing")
+    student_role = discord.utils.get(ctx.guild.roles, name="Students")
     managed_roles = [r for r in ctx.guild.roles if r.managed]
 
-    unrequestable_roles = [everyone, ricardo_role, admin_role, testing_role]
+    unrequestable_roles = [everyone, ricardo_role, admin_role, testing_role, student_role]
     unrequestable_roles.extend(managed_roles)
 
     description = '- ' + '\n - '.join([role.name for role in ctx.guild.roles if role not in unrequestable_roles])
