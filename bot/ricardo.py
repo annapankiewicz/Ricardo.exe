@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
+GUILD_ID = int(os.getenv('DISCORD_GUILD_ID'))
 
 # welcome to the world Ricardo
 intents = discord.Intents().all()
@@ -33,7 +33,7 @@ verified_role = 'Member'
 
 @bot.event
 async def on_ready():
-    guild = discord.utils.find(lambda g: g.name == GUILD, bot.guilds)
+    guild = bot.get_guild(GUILD_ID)
     print(date.today())
     print('Connected to {0.name} as {1.user}'.format(guild, bot))
 
@@ -53,20 +53,16 @@ async def addrole(ctx, *args):
     role_name = ' '.join(args)
     role = discord.utils.get(ctx.guild.roles, name=role_name)
 
-    everyone = discord.utils.get(ctx.guild.roles, name="@everyone")
-    ricardo_role = discord.utils.get(ctx.guild.roles, name="Ricardo.exe")
-    admin_role = discord.utils.get(ctx.guild.roles, name="Admin")
-    testing_role = discord.utils.get(ctx.guild.roles, name="testing")
-    student_role = discord.utils.get(ctx.guild.roles, name="Students")
-    managed_roles = [r for r in ctx.guild.roles if r.managed]
+    stream_role = discord.utils.get(ctx.guild.roles, name="Stream Notification Squad")
+    friendlies_role = discord.utils.get(ctx.guild.roles, name="Friendlies")
+    gacha_role = discord.utils.get(ctx.guild.roles, name="Gacha Hell")
 
-    unrequestable_roles = [everyone, ricardo_role, admin_role, testing_role, student_role]
-    unrequestable_roles.extend(managed_roles)
+    requestable_roles = [stream_role, friendlies_role, gacha_role]
 
     if not role:
         await ctx.message.channel.send("Invalid role. !roles to see available roles")
     else:
-        if role not in unrequestable_roles:
+        if role in requestable_roles:
             try:
                 await member.add_roles(role)
                 await ctx.message.channel.send("Role added!")
@@ -96,19 +92,14 @@ async def removerole(ctx, *args):
 
 @bot.command(name='roles', pass_context=True)
 async def roles(ctx):
-    # exclude roles that shouldn't be requested, like admin or integrated roles
-    # clean this up later please, this is ugly
-    everyone = discord.utils.get(ctx.guild.roles, name="@everyone")
-    ricardo_role = discord.utils.get(ctx.guild.roles, name="Ricardo.exe")
-    admin_role = discord.utils.get(ctx.guild.roles, name="Admin")
-    testing_role = discord.utils.get(ctx.guild.roles, name="testing")
-    student_role = discord.utils.get(ctx.guild.roles, name="Students")
-    managed_roles = [r for r in ctx.guild.roles if r.managed]
+    # TODO(anna): refactor everything into bot.py so it's not doing the same thing a million times
+    # explicitly whitelist available roles
+    stream_role = discord.utils.get(ctx.guild.roles, name="Stream Notification Squad")
+    friendlies_role = discord.utils.get(ctx.guild.roles, name="Friendlies")
+    gacha_role = discord.utils.get(ctx.guild.roles, name="Gacha Hell")
 
-    unrequestable_roles = [everyone, ricardo_role, admin_role, testing_role, student_role]
-    unrequestable_roles.extend(managed_roles)
-
-    description = '- ' + '\n - '.join([role.name for role in ctx.guild.roles if role not in unrequestable_roles])
+    requestable_roles = [stream_role, friendlies_role, gacha_role]
+    description = '- ' + '\n - '.join([role.name for role in ctx.guild.roles if role in requestable_roles])
 
     embedVar = discord.Embed(title="Available roles", description=description, color=0x546f7a)
 
@@ -116,10 +107,10 @@ async def roles(ctx):
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    guild = discord.utils.find(lambda g: g.name == GUILD, bot.guilds)
+    guild = discord.utils.find(lambda g: g.id == GUILD_ID, bot.guilds)
 
     # member role flairing
-    start_here = discord.utils.get(guild.channels, name='start-here')
+    start_here = discord.utils.get(guild.channels, name='start-here-and-read-the-rules')
     if payload.channel_id == start_here.id:
         member = discord.utils.get(guild.members, id=payload.user_id)
         verified = discord.utils.get(guild.roles, name=verified_role)
@@ -127,8 +118,39 @@ async def on_raw_reaction_add(payload):
             await member.add_roles(verified)
 
 @bot.event
+async def on_message_delete(message):
+    guild = discord.utils.find(lambda g: g.id == GUILD_ID, bot.guilds)
+    logging_channel = discord.utils.get(guild.channels, name="logging")
+
+    description = '{0} \n\n Content:\n {1}\n\n Message ID: {2}\n\n {3}'.format(
+        message.author, message.content, message.id, message.created_at)
+
+    embedVar = discord.Embed(title="Message deleted in #{0}".format(message.channel.name), description=description, color=0x546f7a)
+
+    if message.attachments is not None:
+        for item in message.attachments:
+            if item.proxy_url is not None:
+                embedVar.set_thumbnail(url=item.proxy_url)
+            # TODO(anna): need to somehow handle the case where an attachment doesn't have a proxy_url.... hm
+
+    await logging_channel.send(embed=embedVar)
+
+@bot.event
+async def on_message_edit(before, after):
+    guild = discord.utils.find(lambda g: g.id == GUILD_ID, bot.guilds)
+    logging_channel = discord.utils.get(guild.channels, name="logging")
+    if before.author == bot.user or after.author == bot.user:
+        return
+
+    description = '{0} \n\n Before:\n {1}\n\nAfter:\n {2}\n\nMessage ID: {3}\n\n {4}'.format(
+        before.author, before.content, after.content, before.id, before.edited_at)
+
+    embedVar = discord.Embed(title="Message edited in #{0}".format(before.channel.name), description=description, color=0x546f7a)
+    await logging_channel.send(embed=embedVar)
+
+@bot.event
 async def on_error(event, *args, **kwargs):
-    with open(date.today() + '.err.log', 'a') as f:
+    with open(str(date.today()) + '.err.log', 'a') as f:
         if event == 'on_message':
             f.write(f'Unhandled message: {args[0]}\n')
         else:
