@@ -107,7 +107,7 @@ async def roles(ctx):
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    guild = discord.utils.find(lambda g: g.id == GUILD_ID, bot.guilds)
+    guild = bot.get_guild(GUILD_ID)
 
     # member role flairing
     start_here = discord.utils.get(guild.channels, name='start-here-and-read-the-rules')
@@ -119,7 +119,7 @@ async def on_raw_reaction_add(payload):
 
 @bot.event
 async def on_message_delete(message):
-    guild = discord.utils.find(lambda g: g.id == GUILD_ID, bot.guilds)
+    guild = bot.get_guild(GUILD_ID)
     logging_channel = discord.utils.get(guild.channels, name="logging")
 
     description = '{0} \n\n Content:\n {1}\n\n Message ID: {2}\n\n {3}'.format(
@@ -137,7 +137,7 @@ async def on_message_delete(message):
 
 @bot.event
 async def on_message_edit(before, after):
-    guild = discord.utils.find(lambda g: g.id == GUILD_ID, bot.guilds)
+    guild = bot.get_guild(GUILD_ID)
     logging_channel = discord.utils.get(guild.channels, name="logging")
     if before.author == bot.user or after.author == bot.user:
         return
@@ -150,7 +150,7 @@ async def on_message_edit(before, after):
 
 @bot.event
 async def on_error(event, *args, **kwargs):
-    with open(str(date.today()) + '.err.log', 'a') as f:
+    with open('err.log', 'a') as f:
         if event == 'on_message':
             f.write(f'Unhandled message: {args[0]}\n')
         else:
