@@ -41,7 +41,7 @@ async def on_ready():
     print(f'Guild Members:\n - {members}')
 
     # send the react role message in the appropriate channel if it hasn't already been done
-    role_channel = discord.utils.get(guild.channels, name='react-role-testing')
+    role_channel = discord.utils.get(guild.channels, name='react-role')
     if role_channel.last_message is None:
         stream_role = discord.utils.get(guild.roles, name='Stream Notification Squad')
         friendlies_role = discord.utils.get(guild.roles, name='Friendlies')
