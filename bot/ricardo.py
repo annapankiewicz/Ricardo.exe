@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD_ID = int(os.getenv('DISCORD_GUILD_ID'))
+ROLE_CHANNEL = 769101497148637194
 
 # welcome to the world Ricardo
 intents = discord.Intents().all()
@@ -41,7 +42,7 @@ async def on_ready():
     print(f'Guild Members:\n - {members}')
 
     # send the react role message in the appropriate channel if it hasn't already been done
-    role_channel = discord.utils.get(guild.channels, name='react-role')
+    role_channel = discord.utils.get(guild.channels, id=ROLE_CHANNEL)
     if role_channel.last_message is None:
         stream_role = discord.utils.get(guild.roles, name='Stream Notification Squad')
         friendlies_role = discord.utils.get(guild.roles, name='Friendlies')
@@ -137,7 +138,7 @@ async def on_raw_reaction_add(payload):
         if verified not in member.roles:
             await member.add_roles(verified)
 
-    react_role = discord.utils.get(guild.channels, name='react-role')
+    react_role = discord.utils.get(guild.channels, id=ROLE_CHANNEL)
     if payload.channel_id == react_role.id:
         # TODO(anna): move this to a config option instead
         role_matches = {'pepetouched':'Stream Notification Squad', 'pepeooo':'Gacha Hell', 'pepepunch':'Friendlies'}
