@@ -42,7 +42,8 @@ async def on_ready():
     print(f'Guild Members:\n - {members}')
 
     # send the react role message in the appropriate channel if it hasn't already been done
-    role_channel = discord.utils.get(guild.channels, id=ROLE_CHANNEL)
+    # it will have already been done
+    role_channel = discord.utils.get(guild.channels, id=772557851117355068)
     if role_channel.last_message is None:
         stream_role = discord.utils.get(guild.roles, name='Stream Notification Squad')
         friendlies_role = discord.utils.get(guild.roles, name='Friendlies')
@@ -137,18 +138,6 @@ async def on_raw_reaction_add(payload):
         verified = discord.utils.get(guild.roles, name=verified_role)
         if verified not in member.roles:
             await member.add_roles(verified)
-
-    react_role = discord.utils.get(guild.channels, id=ROLE_CHANNEL)
-    if payload.channel_id == react_role.id:
-        # TODO(anna): move this to a config option instead
-        role_matches = {'pepetouched':'Stream Notification Squad', 'pepeooo':'Gacha Hell', 'pepepunch':'Friendlies'}
-        member = discord.utils.get(guild.members, id=payload.user_id)
-
-        if payload.emoji.name in role_matches:
-            role_name = role_matches[payload.emoji.name]
-            role = discord.utils.get(guild.roles, name=role_name)
-            await member.add_roles(role)
-            await member.send('Gave you the {0} role!'.format(role_name))
 
 @bot.event
 async def on_message_delete(message):
